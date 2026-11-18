@@ -101,7 +101,10 @@ def set_global_seed(seed: int):
 
 
 def resolve_device(cfg: dict) -> torch.device:
-    dev = os.environ.get("MJB_ALGO_DEVICE") or cfg.get("device")
+    """Device resolution: cfg['device'] wins (e.g. 'cpu' or 'cuda:1'), then the
+    MJB_ALGO_DEVICE environment variable, then cuda-if-available (the default
+    for the phase-B fleet)."""
+    dev = (cfg or {}).get("device") or os.environ.get("MJB_ALGO_DEVICE")
     if dev:
         return torch.device(dev)
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")

@@ -145,7 +145,7 @@ def train(job_dir: str, task: str, seed: int, cfg: dict) -> None:
     force = float(cfg["adversary_force"])
     pro_budget = int(cfg.get("protagonist_steps", BUDGET_SHARED // 2))
     set_random_seed(seed)
-    torch.set_num_threads(8)
+    torch.set_num_threads(2)
 
     protagonist, adversary = Player(), Player()
 

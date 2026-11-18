@@ -56,7 +56,7 @@ def train(job_dir: str, task: str, seed: int, cfg: dict) -> None:
     hp = cfg["ppo"]
     n_envs = int(cfg["n_envs"])
     set_random_seed(seed)
-    torch.set_num_threads(8)
+    torch.set_num_threads(2)
 
     venv = DummyVecEnv([lambda i=i: Monitor(make_train_env(task, seed + i))
                         for i in range(n_envs)])

@@ -142,6 +142,8 @@ def render_report(main: dict, costs: dict) -> str:
 
 
 def main(argv=None) -> int:
+    if argv and argv[0] == "full":
+        return main_full()
     os.makedirs(REPORTS_DIR, exist_ok=True)
     from .eval.records import load_all
     df = load_all("shared")
@@ -156,5 +158,102 @@ def main(argv=None) -> int:
     json.dump({f"{k[0]}|{k[1]}": v for k, v in main_t.items()},
               open(os.path.join(REPORTS_DIR, "phase_b_main.json"), "w"), indent=1)
     print(text)
+    print(f"\nwritten: {path}")
+    return 0
+
+
+# ------------------------------------------------------------------ phase A
+SOURCE_REFERENCE = {
+    # task -> per-algo reference values from the task book (source labels)
+    "rarl_ppo": {"hopper": 1145, "halfcheetah": 1781, "walker2d": 2233,
+                 "source": "RobustRLlib All (normalized score back-converted)"},
+    "rma": {"hopper": 1307.96, "halfcheetah": 9033.87, "walker2d": 2306.23,
+            "source": "SPARC paper Table 5 mean ± s.e.m. (OOD wind cells)"},
+    "dr_ppo": {"hopper": 1589, "halfcheetah": 2199, "walker2d": 2196,
+               "source": "AD-RRL fig 2 interpolation at 1.2x mass"},
+    "qarl": {"hopper": 1330, "halfcheetah": 4080, "walker2d": 1560,
+             "source": "RMBPO paper heat-map estimates"},
+    "mbpo": {"hopper": 1630, "halfcheetah": 6560, "walker2d": 2110,
+             "source": "RMBPO paper heat-map estimates"},
+    "rmbpo": {"hopper": 2100, "halfcheetah": 6030, "walker2d": 2850,
+              "source": "RMBPO paper heat-map estimates"},
+}
+
+REPRO_KIND = {
+    "rarl_ppo": "按原协议重训（RobustRLlib v5 官方入口）",
+    "rma": "按原协议重训（SPARC v5 风场 + QR-SAC 重建组件）",
+    "dr_ppo": "基于公开信息重建（SB3 PPO + AD-RRL v3 FullObs 语义 + DR 区间）",
+    "qarl": "上游实现移植重跑（v4，RMBPO 论文口径）",
+    "mbpo": "发布权重复测（作者评估器原样）",
+    "rmbpo": "发布权重复测（作者评估器原样）",
+}
+
+
+def phase_a_table() -> str:
+    import glob
+    lines = ["# 阶段 A · 按来源协议复测表", ""]
+    header = "| 方法 | " + " | ".join(TASKS) + " | 复现口径 | 参照 |"
+    lines += [header, "|---|" + "---:|" * len(TASKS) + "|---|---|"]
+    for algo in ALGOS:
+        row = [f"`{algo}`"]
+        for task in TASKS:
+            # prefer the lane's own summary; fall back to episodes parquet
+            val = None
+            for d in glob.glob(os.path.join(RUNS_DIR, "source", algo, task,
+                                             "seed*", "summary.json")):
+                s = json.load(open(d))
+                for key in ("all_24cell_mean", "ood_mean", "point_mean",
+                            "grid_mean", "author_grid_mean", "common64_mean"):
+                    if s.get(key) is not None:
+                        val = s[key]
+                        break
+                if val is None:
+                    continue
+                break
+            if val is None:
+                from .eval.records import load_all
+                df = load_all("source")
+                sub = df[(df["algo"] == algo) & (df["task"] == task)]
+                if not sub.empty:
+                    val = float(sub["return"].mean())
+            row.append("—" if val is None else f"{val:.0f}")
+        ref = SOURCE_REFERENCE.get(algo, {})
+        row.append(REPRO_KIND.get(algo, ""))
+        row.append(" / ".join(f"{t}:{ref[t]:.0f}" for t in TASKS if t in ref))
+        lines.append("| " + " | ".join(row) + " |")
+    return "\n".join(lines)
+
+
+def render_full(main_b: dict, costs: dict) -> str:
+    """Full report.md: phase-A table + phase-B table + protocol notes."""
+    parts = [phase_a_table(), "", "---", ""]
+    parts.append(render_report(main_b, costs))
+    parts += ["", "## 口径说明", "",
+              "- 阶段 A 各方法按其来源论文协议复测；MBPO/RMBPO 用作者评估器原样"
+              "（其 evaluate_v2 不计 done 步奖励——末步计分口径差异已注明），"
+              "RARL-PPO 用 RobustRLlib 官方 v5 入口重训，RMA 用 SPARC 官方入口"
+              "（QR-SAC 组件按论文重建），QARL 为上游实现移植重跑，DR-PPO 为"
+              "公开信息重建。",
+              "- 阶段 B 为统一质量/摩擦分布重训：六法同一 PhysSampler"
+              "（m/m0、摩擦倍率均 U[0.90,1.10]），同一 3,000,000 真实仿真转移预算，"
+              "同一冻结评估器（含末步奖励、30 复位种子 20000-20029、确定性策略、"
+              "无对手无动作噪声）。",
+              "- 主表单元 = 5 训练种子 × (格点内 30 回合平均 → 90/154/64 格等权平均)"
+              " → 种子平均；95% CI 为种子层 bootstrap。",
+              "- 参照值为任务书给出的历史读数（RobustLLib All 反算 / SPARC 表 5 / "
+              "AD-RRL 图 2 插值 / RMBPO 热图估读），仅作复现对照，不进入统一表。"]
+    return "\n".join(parts)
+
+
+def main_full() -> int:
+    os.makedirs(REPORTS_DIR, exist_ok=True)
+    from .eval.records import load_all
+    df = load_all("shared")
+    main_t = phase_b_tables(df) if not df.empty else {}
+    costs = cost_table()
+    text = render_full(main_t, costs)
+    path = os.path.join(REPORTS_DIR, "report.md")
+    open(path, "w").write(text)
+    print(text[:3000])
     print(f"\nwritten: {path}")
     return 0

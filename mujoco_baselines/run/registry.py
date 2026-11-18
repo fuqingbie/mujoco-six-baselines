@@ -38,14 +38,14 @@ class Job:
 
 def build(protocol: str, phases: tuple = ("b",)) -> list:
     jobs = []
-    if "b" in phases:
+    if protocol == "shared" and "b" in phases:
         for algo in ALGO_ORDER:
             for task in TASKS:
                 for seed in TRAIN_SEEDS:
                     cmd = [MJB_PY, "-m", "mujoco_baselines.run.job", "shared",
                            algo, task, str(seed)]
                     jobs.append(Job(algo, task, seed, "shared", cmd, EXP_ROOT, MJB_PY))
-    if "a" in phases or protocol == "source":
+    if protocol == "source" or "a" in phases:
         from . import phase_a
         jobs += phase_a.build_jobs()
     jobs.sort(key=lambda j: j.sort_key())

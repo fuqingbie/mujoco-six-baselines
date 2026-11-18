@@ -962,7 +962,8 @@ def train(job_dir: str, task: str, seed: int, cfg: dict) -> None:
         except (ValueError, OSError):
             pass
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device(cfg.get("device") or
+                          ("cuda" if torch.cuda.is_available() else "cpu"))
     print(f"[qarl] task={task} seed={seed} steps={steps_total} "
           f"device={device}", flush=True)
 
@@ -1176,7 +1177,9 @@ def train(job_dir: str, task: str, seed: int, cfg: dict) -> None:
                 "torch": torch.get_rng_state(),
                 "np": np.random.get_state(),
                 "env": env.unwrapped._np_random.bit_generator.state,
-                "sampler": env.env._sampler.rng.bit_generator.state,
+                "sampler": (env.env._sampler.rng.bit_generator.state
+                             if hasattr(getattr(env.env, "_sampler", None), "rng")
+                             else None),
             },
         }, state_path)
 

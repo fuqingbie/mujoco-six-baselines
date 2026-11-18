@@ -38,7 +38,8 @@ from mujoco_baselines.config import MODEL_BASED_COMMON  # noqa: E402
 
 TASK = "hopper"
 SEED = 0
-N_SYNTH = 3000          # synthetic env-buffer transitions
+N_SYNTH = 1500          # synthetic env-buffer transitions (small: keeps the
+# early-stopped model rounds quick; bit-exactness does not depend on the size)
 ROLLOUT_ROUNDS = 2
 
 

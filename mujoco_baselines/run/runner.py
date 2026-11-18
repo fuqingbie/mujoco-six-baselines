@@ -90,9 +90,10 @@ def main(argv) -> int:
         env = dict(os.environ)
         env["CUDA_VISIBLE_DEVICES"] = str(gpu)
         env["CUDA_MPS_PIPE_DIRECTORY"] = MPS_PIPE_DIR
-        env["OMP_NUM_THREADS"] = "8"
-        env["MKL_NUM_THREADS"] = "8"
-        env["OPENBLAS_NUM_THREADS"] = "8"
+        env["OMP_NUM_THREADS"] = "2"
+        env["MKL_NUM_THREADS"] = "2"
+        env["OPENBLAS_NUM_THREADS"] = "2"
+        env["NUMEXPR_NUM_THREADS"] = "2"
         env["PYTHONPATH"] = EXP_ROOT
         env.pop("SPARC_CHECKOUT", None)
         cmd = list(job.cmd)

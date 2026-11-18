@@ -461,6 +461,13 @@ def _get_device():
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
+def _resolve_device(cfg):
+    d = (cfg or {}).get("device")
+    if d in ("cpu", "cuda"):
+        return torch.device(d)
+    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
 def _current_context(env) -> np.ndarray:
     """Per-reset privileged context (mass_mult, friction_mult), float32 (2,).
 
@@ -587,7 +594,7 @@ def _torch_save(obj, path):
 # Phase 1: QR-SAC expert with privileged context (sparc rma_phase1.py)        #
 # --------------------------------------------------------------------------- #
 def _run_phase1(job_dir, task, seed, cfg, counters, P):
-    device = _get_device()
+    device = _resolve_device(cfg)
     p1_steps = int(cfg["phase1_steps"])
     learning_starts = int(cfg["learning_starts"])
     batch_size = int(cfg["batch_size"])
@@ -869,7 +876,7 @@ def _run_phase1(job_dir, task, seed, cfg, counters, P):
 # Phase 2: frozen expert + history adapter regression (sparc rma_phase2.py)   #
 # --------------------------------------------------------------------------- #
 def _run_phase2(job_dir, task, seed, cfg, counters, P):
-    device = _get_device()
+    device = _resolve_device(cfg)
     p2_steps = int(cfg["phase2_steps"])
     learning_starts = int(cfg["learning_starts"])
     batch_size = int(cfg["batch_size"])
@@ -1213,5 +1220,5 @@ def load_eval_adapter(job_dir: str, task: str, seed: int, cfg: dict):
     a_high = np.asarray(ckpt.get("action_high", np.ones(act_dim)), dtype=np.float32)
     policy = AdapterPolicy(obs_dim, act_dim, history_length, a_low, a_high)
     policy.load_state_dict(ckpt["state_dict"])
-    device = _get_device()
+    device = _resolve_device(cfg)
     return RMAEvalAdapter(policy, history_length, obs_dim, act_dim, device)

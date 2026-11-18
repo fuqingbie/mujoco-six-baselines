@@ -64,6 +64,7 @@ RMA = dict(
     context_dim=2,            # (mass mult, friction mult)
     # phase-2 adapter trains by regression on the expert latent embedding
     # (representation MSE, task §2 "保留…表征 MSE"); expert frozen.
+    device="cpu",  # tiny nets: CPU beats GPU under many concurrent jobs
 )
 
 QARL = dict(
@@ -79,6 +80,7 @@ QARL = dict(
     n_episodes_per_iteration=30,
     # shared env: both players act in the same transition; 3M transitions total
     steps=SHARED_BUDGET,
+    device="cpu",  # tiny nets: CPU beats GPU under many concurrent jobs
 )
 
 # paper budgets per task for the model-based pair

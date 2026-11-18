@@ -55,9 +55,9 @@ def main(task: str, seed: int) -> int:
         # ---- phase 1: QR-SAC expert (sparc_expert_alg=qr_sac per paper §4.1)
         expert_path = os.path.join(job_dir, "models", f"{env_id}_rma_phase1_{seed}_expert.pth")
         if not os.path.exists(expert_path):
-            cmd1 = [SPARC_PY, "train.py", "--alg", "rma_phase1", "--env", env_id,
+            cmd1 = [SPARC_PY, os.path.join(CHECKOUT, "train.py"), "--alg", "rma_phase1", "--env", env_id,
                     "--sparc-expert-alg", "qr_sac", "--total-timesteps", str(STEPS),
-                    "--seed", str(seed), "--wandb-mode", "disabled"]
+                    "--seed", str(seed), "--wandb-mode", "disabled", "--no-cuda"]
             with open(os.path.join(job_dir, "phase1.stdout.log"), "a") as fo, \
                  open(os.path.join(job_dir, "phase1.stderr.log"), "a") as fe:
                 rc = subprocess.call(cmd1, cwd=job_dir, env=env, stdout=fo, stderr=fe)
@@ -65,9 +65,9 @@ def main(task: str, seed: int) -> int:
         # ---- phase 2: adapter against the frozen expert
         adapter_path = os.path.join(job_dir, "models", f"{env_id}_rma_phase2_{seed}_adapter.pth")
         if not os.path.exists(adapter_path):
-            cmd2 = [SPARC_PY, "train.py", "--alg", "rma_phase2", "--env", env_id,
+            cmd2 = [SPARC_PY, os.path.join(CHECKOUT, "train.py"), "--alg", "rma_phase2", "--env", env_id,
                     "--total-timesteps", str(STEPS), "--seed", str(seed),
-                    "--wandb-mode", "disabled",
+                    "--wandb-mode", "disabled", "--no-cuda",
                     "--expert-model-path", expert_path]
             with open(os.path.join(job_dir, "phase2.stdout.log"), "a") as fo, \
                  open(os.path.join(job_dir, "phase2.stderr.log"), "a") as fe:
