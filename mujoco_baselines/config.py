@@ -109,7 +109,12 @@ MODEL_BASED_COMMON = dict(
 RMBPO_ETA = {"hopper": 4.0, "halfcheetah": 0.5, "walker2d": 0.5}  # fig 3/7 (task §3)
 RMBPO_AUX = dict(
     hidden=(200, 200, 200, 200), lr=1e-3, batch=256,  # robust_head from default.py
+    max_train_iterations=2000,  # hard cap per aux round: the paper's 'while
+    # improving' rule alone does not terminate when the holdout combined loss
+    # keeps improving >1% (robustness term is genuinely improvable); capped to
+    # keep the aux a 'small fraction' of the round cost as the paper reports
 )
+
 
 # ---------------------------------------------------------------- phase A ---
 PHASE_A = {

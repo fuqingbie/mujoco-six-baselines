@@ -115,6 +115,8 @@ class RmbpoTrainer(MbpoTrainer):
         self.aux_cfg = aux_cfg
         self.aux_batch = int(aux_cfg.get("batch", 256))
         self.aux_eval_size = int(aux_cfg.get("eval_size", 4096))
+        self.aux_max_train_iterations = float(
+            aux_cfg.get("max_train_iterations", 2000))
         self.aux_model = AuxiliaryModel(
             self.obs_dim, self.act_dim,
             aux_cfg.get("hidden", (200, 200, 200, 200))).to(self.device)
@@ -256,6 +258,8 @@ class RmbpoTrainer(MbpoTrainer):
                 aux_train_epochs += num_epochs_since_prev_best
                 num_epochs_since_prev_best = 0
             if num_epochs_since_prev_best >= self.max_model_update_epochs_to_improve:
+                break
+            if aux_train_iters > self.aux_max_train_iterations:
                 break
         self._load_aux_snapshots()
         self.aux_rounds += 1
