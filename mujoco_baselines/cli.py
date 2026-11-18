@@ -13,6 +13,9 @@ def main(argv):
     if cmd == "run":
         from .run import runner
         return runner.main(argv[1:])
+    if cmd == "verify":
+        from . import verify
+        return verify.main(argv[1:])
     if cmd == "report":
         from . import report
         return report.main(argv[1:])
