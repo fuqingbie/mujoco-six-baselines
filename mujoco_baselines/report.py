@@ -15,7 +15,7 @@ import os
 import numpy as np
 import pandas as pd
 
-from .constants import ALGOS, EPISODES_DIR, MANIFEST, REPORTS_DIR, TASKS
+from .constants import ALGOS, EPISODES_DIR, MANIFEST, REPORTS_DIR, RUNS_DIR, TASKS
 from . import grids as G
 
 RNG = np.random.default_rng(20261118)

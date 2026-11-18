@@ -180,7 +180,10 @@ class RmbpoTrainer(MbpoTrainer):
         # (e) robustness loss
         prediction = pred_state_dist.sample()  # detached sample (no_grad sampler)
         log_probs = pred_state_dist.log_prob(prediction)
-        pred_state, pred_reward = prediction[..., :-1], prediction[..., -1]
+        # the nominal (and hence aux) model predicts DIFFS (mbpo convention:
+        # next_obs = pred[:, :-1] + obs); reconstruct absolute states before
+        # any critic / termination call, exactly like aux_predict/rollouts do
+        pred_state, pred_reward = prediction[..., :-1] + obs_batch, prediction[..., -1]
         with torch.no_grad():
             next_action = self.agent.policy_network.sample(
                 pred_state, deterministic=True)["action"]
