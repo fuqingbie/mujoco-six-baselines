@@ -18,7 +18,7 @@ import time
 
 ROOT = "/root/mjbexp"
 LOG = os.path.join(ROOT, "logs/watchdog.log")
-TARGET = 44
+TARGET = 32
 
 
 def pids_matching(*needles):
@@ -147,8 +147,6 @@ def main():
             for t in sorted(active_trees, key=lambda t: -t["pri"]):
                 if len(active_trees) <= TARGET:
                     break
-                if t["pri"] == 0:
-                    continue
                 for pri, pid, _ in t["active"]:
                     try:
                         os.kill(pid, 19)
