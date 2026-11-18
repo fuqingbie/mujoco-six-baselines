@@ -1,0 +1,90 @@
+{
+  "generated": "2026-11-18",
+  "machine": {
+    "gpus": "2x NVIDIA H20 97871MiB (GPU-d1f4e0f3..., GPU-a212149d...)",
+    "driver": "535.161.08",
+    "cpu": "384 cores",
+    "os": "Linux 5.4.241-1-tlinux4-0017.7 (container)"
+  },
+  "upstreams": {
+    "robustrllib": {
+      "url": "https://github.com/robustrl-lib/robustrllib",
+      "sha": "a665ddf1273f4436732a187e1588decbe72be08f",
+      "date": "2026-10-22",
+      "local": "upstreams/robustrllib",
+      "local_changes": [],
+      "role": ["phase-A RARL-PPO (train.py/evaluate.py/rarl_ppo_*.yaml, v5)", "phase-B vendored dual-PPO update + player wrappers (baselines/rarl/{game,train}.py -> mujoco_baselines/algos/rarl_ppo.py)"]
+    },
+    "sparc": {
+      "url": "https://github.com/bramgrooten/sparc",
+      "sha": "53f1e2e9eb2d88de84bce3a82453b2608ed2a0bb",
+      "date": "2025-11-14",
+      "local": "upstreams/sparc",
+      "missing_files": ["algorithms/qr_sac.py (imported by train.py and rma_phase1.py, absent in pinned tree)", "environments/wind_ant.py (imported, absent)"],
+      "local_changes": [],
+      "role": ["phase-A RMA two-phase baseline (train.py rma_phase1/rma_phase2, v5 wind envs)", "phase-B RMA structure reference; QR-SAC reconstructed per paper"]
+    },
+    "ad-rrl": {
+      "url": "https://github.com/danielefoffano/AD-RRL",
+      "sha": "dbe9a30275a22c56fcac33e1ee33999eab992b67",
+      "date": "2025-10-22",
+      "local": "upstreams/AD-RRL",
+      "local_changes": [],
+      "role": ["phase-A DR-PPO reconstruction basis (old-gym v3 FullObs envs + assets; DR intervals from AD-RRL paper appendix E table 4, not present in code)"]
+    },
+    "qarl": {
+      "url": "https://github.com/AryamanReddi99/quantal-adversarial-rl",
+      "sha": "aae57b7b0f399986ee47bdaa543529716945a026",
+      "date": "2024-03-07",
+      "local": "upstreams/quantal-adversarial-rl",
+      "local_changes": [],
+      "role": ["phase-A + phase-B QARL port source (mushroom-rl SAC + gamma temperature teacher + two-player dm_control envs -> gymnasium v4 port in mujoco_baselines/algos/qarl.py)"]
+    },
+    "mbpo": {
+      "url": "https://github.com/jannerm/mbpo",
+      "sha": "ac694ff9f1ebb789cc5b3f164d9d67f93ed8f129",
+      "date": "2021-03-21",
+      "local": "upstreams/mbpo",
+      "local_changes": [],
+      "role": ["phase-B MBPO algorithm reference (probabilistic ensemble, short branched rollouts, SAC, per-task configs examples/config/<task>/0.py)"]
+    },
+    "rmbpo-tmlr": {
+      "url": "https://github.com/rmbpo-eval/rmbpo-tmlr",
+      "sha": "d58283f12b3bc184d7eb2bbfe30fb4a8db0e5936",
+      "date": "2025-01-29",
+      "local": "upstreams/rmbpo-tmlr",
+      "local_changes": [],
+      "submodules": {"embodied/robustness-gymnasium": "vendored in-tree (gymnasium 0.29.2 fork with Perturbed v4 envs)"},
+      "weights": "upstreams/rmbpo-tmlr/weights (49M, real .pt archives, NOT git-lfs pointers; hopper-v4/{mbpo,rmbpo_4}, halfcheetah-v4/{mbpo,rmbpo_025,rmbpo_05}, walker2d-v4/{mbpo,rmbpo_05}; 5 seeds each named seed_a..e.pt)",
+      "role": ["phase-A MBPO/RMBPO released-weight re-eval (evaluate/main_eval.py + configs/robust_mbpo/*-friction-torso.py)", "phase-B grids/protocol anchor"]
+    },
+    "unstable_baselines": {
+      "url": "https://github.com/x35f/model_based_rl",
+      "sha": "2c2c4aca4952e3251fd77ba9413b72d25c033426",
+      "date": "2023-05-10",
+      "local": "upstreams/unstable_baselines",
+      "local_changes": [],
+      "role": ["MBPOAgent class required to load released weights (mbpo/agent.py)", "phase-B MBPO/RMBPO shared training skeleton (mbpo/{trainer,transition_model}.py)"]
+    }
+  },
+  "environments": {
+    "mjb": {
+      "path": "envs/mjb",
+      "python": "3.11.17 (conda create)",
+      "purpose": "phase-B unified (robustness-gymnasium v4) + phase-A MBPO/RMBPO re-eval + QARL + DR-PPO(v3 recon)",
+      "key_pins": {"torch": "2.5.1+cu121", "mujoco": "2.3.7", "gymnasium": "0.29.2 (robustness-gymnasium fork, pip -e upstreams/rmbpo-tmlr/embodied/robustness-gymnasium)", "gym": "0.26.2", "numpy": "1.26.4", "stable-baselines3": "2.3.2"}
+    },
+    "mjb5": {
+      "path": "envs/mjb5",
+      "python": "3.11.17 (conda create)",
+      "purpose": "phase-A v5 lanes: RobustRLlib RARL-PPO, SPARC RMA",
+      "key_pins": {"gymnasium": "1.2.0", "torch": "2.5.1+cu121", "stable-baselines3": "2.3.2", "robustrllib": "pip -e .[mujoco,methods]"}
+    }
+  },
+  "notes": [
+    "Workspace HTML companion (MuJoCo三任务_六种算法方法与结果解读.html) not found in workspace; reference values taken from task-book section 3 table.",
+    "robustness-gymnasium friction_p semantics: model.geom_friction[:, :] = pristine * (1 + friction_p) (all geoms, all 3 friction components); torso_mass: model.body_mass[1] = absolute value.",
+    "robustness-gymnasium Perturbed env step() adds U(-5e-3,5e-3) action noise (authors' setting, appendix D); disabled in phase-B per task §4.1, kept in phase-A re-eval.",
+    "RMBPO paper appendix D: QARL/RARL/MixedNE-LD use Reddi et al. implementation (SAC-based); MuJoCo: UTD 1, actor lr 3e-4, adversary force cap 1 (QARL) / 5 (RARL in their study; RobustRLlib phase-A lane keeps its own 5.0 v5 protocol)."
+  ]
+}
