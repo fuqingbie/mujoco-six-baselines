@@ -18,7 +18,7 @@ import time
 
 ROOT = "/root/mjbexp"
 LOG = os.path.join(ROOT, "logs/watchdog.log")
-TARGET = 32
+TARGET = 60
 
 
 def pids_matching(*needles):

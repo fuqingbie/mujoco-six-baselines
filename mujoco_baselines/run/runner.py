@@ -89,7 +89,7 @@ def main(argv) -> int:
         gpu = gpus[worker_idx % len(gpus)]
         env = dict(os.environ)
         env["CUDA_VISIBLE_DEVICES"] = str(gpu)
-        env["CUDA_MPS_PIPE_DIRECTORY"] = MPS_PIPE_DIR
+        env["CUDA_MPS_PIPE_DIRECTORY"] = "/tmp/mjb-mps-pipe"  # own MPS daemon (concurrent small kernels)
         env["OMP_NUM_THREADS"] = "2"
         env["MKL_NUM_THREADS"] = "2"
         env["OPENBLAS_NUM_THREADS"] = "2"

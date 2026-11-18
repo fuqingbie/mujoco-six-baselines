@@ -47,8 +47,6 @@ def main(task: str, seed: int) -> int:
     env = dict(os.environ)
     env["PYTHONPATH"] = REPO
     env.setdefault("CUDA_MPS_PIPE_DIRECTORY", "/tmp/mjb-no-mps")
-    env["CUDA_VISIBLE_DEVICES"] = ""  # SB3 auto-device -> CPU (GPU shared with
-    # an external tenant; PPO's small ops are faster on CPU under that load)
     env.setdefault("OMP_NUM_THREADS", "8")
     t0 = time.time()
     try:

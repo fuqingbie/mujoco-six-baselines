@@ -58,7 +58,7 @@ def main(task: str, seed: int) -> int:
         if not os.path.exists(expert_path):
             cmd1 = [SPARC_PY, os.path.join(CHECKOUT, "train.py"), "--alg", "rma_phase1", "--env", env_id,
                     "--sparc-expert-alg", "qr_sac", "--total-timesteps", str(STEPS),
-                    "--seed", str(seed), "--wandb-mode", "disabled", "--no-cuda"]
+                    "--seed", str(seed), "--wandb-mode", "disabled"]
             with open(os.path.join(job_dir, "phase1.stdout.log"), "a") as fo, \
                  open(os.path.join(job_dir, "phase1.stderr.log"), "a") as fe:
                 rc = subprocess.call(cmd1, cwd=job_dir, env=env, stdout=fo, stderr=fe)
@@ -68,7 +68,7 @@ def main(task: str, seed: int) -> int:
         if not os.path.exists(adapter_path):
             cmd2 = [SPARC_PY, os.path.join(CHECKOUT, "train.py"), "--alg", "rma_phase2", "--env", env_id,
                     "--total-timesteps", str(STEPS), "--seed", str(seed),
-                    "--wandb-mode", "disabled", "--no-cuda",
+                    "--wandb-mode", "disabled",
                     "--expert-model-path", expert_path]
             with open(os.path.join(job_dir, "phase2.stdout.log"), "a") as fo, \
                  open(os.path.join(job_dir, "phase2.stderr.log"), "a") as fe:
