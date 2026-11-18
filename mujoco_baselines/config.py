@@ -100,6 +100,7 @@ MODEL_BASED_COMMON = dict(
     train_model_interval={t: int(round(250 * _MBPO_SCALE[t])) for t in _MBPO_ORIG},
     max_model_update_epochs_to_improve=5,
     epoch_length=1000,
+    device="cpu",  # external tenant saturates both GPUs; tiny nets faster on CPU
     env_buffer=1_000_000,
     model_buffer=2_000_000,
     budget=SHARED_BUDGET,

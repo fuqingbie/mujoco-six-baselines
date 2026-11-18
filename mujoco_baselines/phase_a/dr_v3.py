@@ -165,7 +165,7 @@ def train(job_dir: str, task: str, seed: int) -> str:
     from stable_baselines3 import PPO
     rng = np.random.default_rng(seed)
     env, m0, f0 = build_env(task, rng=rng)
-    model = PPO("MlpPolicy", env, seed=seed, verbose=0)
+    model = PPO("MlpPolicy", env, seed=seed, verbose=0, device="cpu")
     t0 = time.time()
     model.learn(total_timesteps=STEPS, progress_bar=False)
     ck = os.path.join(job_dir, "ckpt")

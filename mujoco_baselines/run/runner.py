@@ -110,8 +110,14 @@ def main(argv) -> int:
     while qi < len(queue) or running:
         for w in list(running):
             job, proc, t0 = running[w]
-            if proc.poll() is None:
+            rc = proc.poll()
+            if rc is None and _zombie_reap(proc):
+                # poll() can stall on zombie children (observed when jobs are
+                # killed externally); reap directly and synthesise the rc
+                rc = proc.returncode if proc.returncode is not None else -15
+            if rc is None:
                 continue
+            proc.returncode = rc
             del running[w]
             st = job_state(job.dir)
             el = time.time() - t0
@@ -135,3 +141,22 @@ def main(argv) -> int:
     log.close()
     print("[runner] queue drained", flush=True)
     return 0
+
+
+def _zombie_reap(proc) -> bool:
+    """True if the child is a zombie; reaps it via waitpid directly."""
+    import os as _os
+    try:
+        with open(f"/proc/{proc.pid}/status") as f:
+            state = next(l for l in f if l.startswith("State:"))
+    except (FileNotFoundError, StopIteration, ProcessLookupError):
+        return False
+    if "Z" not in state.split(":", 1)[1]:
+        return False
+    try:
+        _pid, status = _os.waitpid(proc.pid, _os.WNOHANG)
+        if _pid == proc.pid:
+            proc.returncode = _os.waitstatus_to_exitcode(status)
+    except ChildProcessError:
+        return True
+    return True

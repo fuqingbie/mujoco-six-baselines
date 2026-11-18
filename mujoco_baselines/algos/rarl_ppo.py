@@ -104,7 +104,7 @@ def _make_agent(hp, venv, seed, lr):
                                  "vf_coef", "max_grad_norm")}
     kwargs["learning_rate"] = lr
     policy = "CnnPolicy" if len(venv.observation_space.shape) == 3 else "MlpPolicy"
-    return PPO(policy, venv, seed=seed, verbose=0, **kwargs)
+    return PPO(policy, venv, seed=seed, verbose=0, device="cpu", **kwargs)
 
 
 def _learn_exact(agent, n_envs, target, batch_size):
@@ -221,7 +221,7 @@ class _RarlEvalAdapter:
 def load_eval_adapter(job_dir: str, task: str, seed: int, cfg: dict):
     from stable_baselines3 import PPO as _PPO
     ck = os.path.join(job_dir, "ckpt")
-    model = _PPO.load(os.path.join(ck, "step_final.zip"), device=cfg.get("device", "cuda"))
+    model = _PPO.load(os.path.join(ck, "step_final.zip"), device=cfg.get("device", "cpu"))
     vecnorm = None
     vn = os.path.join(ck, "vecnorm.pkl")
     if cfg.get("normalize", True) and os.path.exists(vn):

@@ -63,7 +63,7 @@ def train(job_dir: str, task: str, seed: int, cfg: dict) -> None:
     if cfg["normalize"]:
         venv = VecNormalize(venv, norm_obs=True, norm_reward=True,
                             clip_obs=10.0, gamma=hp["gamma"])
-    model = PPO("MlpPolicy", venv, seed=seed, verbose=0, **{
+    model = PPO("MlpPolicy", venv, seed=seed, verbose=0, device="cpu", **{
         k: hp[k] for k in ("n_steps", "batch_size", "n_epochs", "learning_rate",
                            "gamma", "gae_lambda", "clip_range", "ent_coef",
                            "vf_coef", "max_grad_norm")})
@@ -104,7 +104,7 @@ class _DrEvalAdapter:
 
 def load_eval_adapter(job_dir: str, task: str, seed: int, cfg: dict):
     ck = os.path.join(job_dir, "ckpt")
-    model = PPO.load(os.path.join(ck, "final.zip"), device=cfg.get("device", "cuda"))
+    model = PPO.load(os.path.join(ck, "final.zip"), device=cfg.get("device", "cpu"))
     vecnorm = None
     vn = os.path.join(ck, "vecnorm.pkl")
     if cfg.get("normalize", True) and os.path.exists(vn):
