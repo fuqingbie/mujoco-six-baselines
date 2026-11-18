@@ -102,3 +102,15 @@ python -m mujoco_baselines.phase_a.rmbpo_eval <mbpo|rmbpo> <task>
 | QARL | 33/33 冒烟 + 求职胶水测试（计数/记录/manifest） |
 | MBPO | 6k 步全任务学习曲线正常（holdout MSE 0.0066） |
 | RMBPO | 旁路测试位级一致 ×3 轮（含修复后）+ 上限验证 3000 步完整收敛（aux_rounds 5 全部终止） |
+
+## 9. 速度最大化实测（响应用户指示，2026-11-18 23:00-23:25）
+
+发现外部租户 GPU 负载降到 3-4% 后做了系统 A/B：
+- 自建 MPS daemon（私有管道 /tmp/mjb-mps-pipe，绕开 kev 默认管道）+ 全族上 GPU：
+  **实测反而慢 3-4×**（mbpo 8.7 sps vs CPU 模式 36 sps）——微小批次 SAC 的
+  ~40 次小内核/步在 30 并发 MPS 客户端下每次 launch 延迟叠加，得不偿失。
+- torch.compile：编译开销主导，实测慢 12×，放弃。
+- **最终配置（实测最优）**：全部 CPU + OMP=2 + watchdog 目标 60 树
+  （94 核 cgroup 配额的平台期 ~60-70 并发作业；并发再高受内存带宽限制
+  边际递减）。GPU 留给外部租户。
+- 总吞吐估算：~1500-1700 步/秒聚合，剩余 ~470M 交互 → 约 1.5-2 天跑完。

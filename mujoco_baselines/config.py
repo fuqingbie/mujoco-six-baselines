@@ -64,7 +64,7 @@ RMA = dict(
     context_dim=2,            # (mass mult, friction mult)
     # phase-2 adapter trains by regression on the expert latent embedding
     # (representation MSE, task §2 "保留…表征 MSE"); expert frozen.
-    device="cuda",  # GPUs freed up (external tenant load dropped to ~3%)
+    device="cpu",  # measured: tiny-batch SAC is 3-4x faster on CPU; GPU+MPS adds per-launch latency
 )
 
 QARL = dict(
@@ -80,7 +80,7 @@ QARL = dict(
     n_episodes_per_iteration=30,
     # shared env: both players act in the same transition; 3M transitions total
     steps=SHARED_BUDGET,
-    device="cuda",  # GPUs freed up (external tenant load dropped to ~3%)
+    device="cpu",  # measured: tiny-batch SAC is 3-4x faster on CPU; GPU+MPS adds per-launch latency
 )
 
 # paper budgets per task for the model-based pair
@@ -105,7 +105,7 @@ MODEL_BASED_COMMON = dict(
     train_model_interval={t: int(round(250 * _MBPO_SCALE[t])) for t in _MBPO_ORIG},
     max_model_update_epochs_to_improve=5,
     epoch_length=1000,
-    device="cuda",  # GPUs freed up (external tenant load dropped to ~3%)
+    device="cpu",  # measured: tiny-batch SAC is 3-4x faster on CPU; GPU+MPS adds per-launch latency
     env_buffer=1_000_000,
     model_buffer=2_000_000,
     budget=SHARED_BUDGET,
