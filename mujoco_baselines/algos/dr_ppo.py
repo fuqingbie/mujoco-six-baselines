@@ -18,7 +18,6 @@ import time
 import numpy as np
 import torch
 from stable_baselines3 import PPO
-from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
@@ -27,21 +26,22 @@ from ..constants import BUDGET_SHARED
 from ..envs.perturbed import make_train_env
 
 
-class _BudgetStop(BaseCallback):
-    def __init__(self, steps, ckpt_dir, vecnorm=None):
-        super().__init__()
-        self.steps, self.ckpt_dir, self.vecnorm = int(steps), ckpt_dir, vecnorm
-        self.saved = None
 
-    def _on_step(self) -> bool:
-        if self.num_timesteps < self.steps:
-            return True
-        os.makedirs(self.ckpt_dir, exist_ok=True)
-        self.saved = os.path.join(self.ckpt_dir, "final.zip")
-        self.model.save(self.saved)
-        if self.vecnorm is not None:
-            self.vecnorm.save(os.path.join(self.ckpt_dir, "vecnorm.pkl"))
-        return False
+def _learn_exact(agent, n_envs, target, batch_size):
+    """Exact-budget PPO blocks; the final block is trimmed to an updatable
+    length with the rollout buffer reallocated to match (see rarl_ppo)."""
+    from stable_baselines3.common.buffers import RolloutBuffer
+    while agent.num_timesteps < target:
+        block = agent.n_steps * n_envs
+        remaining = target - agent.num_timesteps
+        if remaining < block:
+            rem_env = max(remaining // n_envs, batch_size)
+            agent.n_steps = int(rem_env)
+            agent.rollout_buffer = RolloutBuffer(
+                agent.n_steps, agent.observation_space, agent.action_space,
+                device=agent.device, gamma=agent.gamma, gae_lambda=agent.gae_lambda,
+                n_envs=n_envs)
+        agent.learn(total_timesteps=(agent.n_steps * n_envs), reset_num_timesteps=False)
 
 
 def train(job_dir: str, task: str, seed: int, cfg: dict) -> None:
@@ -67,26 +67,23 @@ def train(job_dir: str, task: str, seed: int, cfg: dict) -> None:
         k: hp[k] for k in ("n_steps", "batch_size", "n_epochs", "learning_rate",
                            "gamma", "gae_lambda", "clip_range", "ent_coef",
                            "vf_coef", "max_grad_norm")})
-    stop = _BudgetStop(budget, ck, venv if cfg["normalize"] else None)
-    block = int(hp["n_steps"]) * n_envs
     t0 = time.time()
     prog = open(os.path.join(job_dir, "progress.jsonl"), "a")
-    while stop.saved is None:
-        remaining = budget - model.num_timesteps
-        total = block if remaining >= block else remaining
-        if total < block:
-            rem_env = max(total // n_envs, hp["batch_size"])
-            model.n_steps = int(rem_env)
-            total = rem_env * n_envs
-        model.learn(total_timesteps=total, callback=stop, reset_num_timesteps=False)
+    while model.num_timesteps < budget:
+        _learn_exact(model, n_envs, budget, hp["batch_size"])
         ret = np.mean([e["r"] for e in model.ep_info_buffer]) if model.ep_info_buffer else float("nan")
         prog.write(json.dumps({"steps": model.num_timesteps, "episode_return": float(ret),
                                "wall_s": time.time() - t0}) + "\n")
         prog.flush()
+    os.makedirs(ck, exist_ok=True)
+    final = os.path.join(ck, "final.zip")
+    model.save(final)
+    if cfg["normalize"]:
+        venv.save(os.path.join(ck, "vecnorm.pkl"))
     prog.close()
     json.dump({"real_transitions": int(model.num_timesteps)}, open(counters_path, "w"), indent=1)
     venv.close()
-    print(f"[dr_ppo] done: {model.num_timesteps} transitions, ckpt {stop.saved}", flush=True)
+    print(f"[dr_ppo] done: {model.num_timesteps} transitions, ckpt {final}", flush=True)
 
 
 class _DrEvalAdapter:

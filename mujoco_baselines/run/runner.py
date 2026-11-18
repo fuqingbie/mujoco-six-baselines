@@ -1,32 +1,24 @@
 """Queue runner: schedules jobs across the two H20s (task §5).
 
     python -m mujoco_baselines run --protocol shared --workers 2 --resume
+    python -m mujoco_baselines run --protocol source --workers 6 --resume
 
-Workers pull the next PENDING job and spawn
-    python -m mujoco_baselines.run.job shared <algo> <task> <seed>
-as a subprocess with a pinned GPU, the MPS-bypass pipe dir, and bounded
-thread counts. Status lives in runs/<protocol>/<algo>/<task>/seed<k>/
-status.json; RUNNING entries with dead pids are re-queued (resume).
+Workers pull the next PENDING job from the registry (shared protocol: the
+unified package in the mjb env; source protocol: per-lane drivers with their
+own interpreters) and spawn it as a subprocess with a pinned GPU, the
+MPS-bypass pipe dir, and bounded thread counts. Status lives in
+runs/<protocol>/<algo>/<task>/seed<k>/status.json; RUNNING entries with dead
+pids are re-queued (resume). Failed jobs are retried up to twice from their
+checkpoints.
 """
 from __future__ import annotations
 
 import json
 import os
 import subprocess
-import sys
 import time
 
-from ..constants import (ALGOS, LOGS_DIR, MPS_PIPE_DIR, RUNS_DIR, TASKS,
-                         TRAIN_SEEDS)
-
-# longest-first so the heavy families start early; hopper seed 0 first overall
-# (task §5.3: first finish Hopper's first formal seed, other card runs the rest)
-ALGO_ORDER = ("mbpo", "rmbpo", "rma", "qarl", "rarl_ppo", "dr_ppo")
-TASK_ORDER = {"hopper": 0, "halfcheetah": 1, "walker2d": 2}
-
-
-def job_dir(algo, task, seed, protocol="shared"):
-    return os.path.join(RUNS_DIR, protocol, algo, task, f"seed{seed}")
+from ..constants import EXP_ROOT, LOGS_DIR, MPS_PIPE_DIR
 
 
 def job_state(d):
@@ -44,20 +36,6 @@ def _pid_alive(pid):
         return False
 
 
-def build_jobs(protocol="shared"):
-    jobs = []
-    for algo in ALGO_ORDER:
-        for task in TASKS:
-            for seed in TRAIN_SEEDS:
-                jobs.append((algo, task, seed))
-    if protocol != "shared":
-        raise NotImplementedError(f"protocol {protocol} lanes are defined in phase_a.py")
-    # hopper seed 0 of every algo first, then longest-family-first
-    jobs.sort(key=lambda j: (0 if (j[1] == "hopper" and j[2] == 0) else 1,
-                             ALGO_ORDER.index(j[0]), TASK_ORDER[j[1]], j[2]))
-    return jobs
-
-
 def main(argv) -> int:
     import argparse
     p = argparse.ArgumentParser()
@@ -72,26 +50,27 @@ def main(argv) -> int:
     os.makedirs(MPS_PIPE_DIR, exist_ok=True)
     os.makedirs(LOGS_DIR, exist_ok=True)
     gpus = [int(g) for g in args.gpus.split(",")]
+    from .registry import build as build_jobs
     jobs = build_jobs(args.protocol)
     if args.only:
         filt = args.only.split(",")
+
         def keep(j):
-            key = f"{j[0]}:{j[1]}:{j[2]}"
-            key2 = f"{j[0]}:{j[1]}"
+            key = f"{j.algo}:{j.task}:{j.seed}"
+            key2 = f"{j.algo}:{j.task}"
             return any(key.startswith(f.rstrip(':')) or key2 == f.rstrip(':')
                        for f in filt)
         jobs = [j for j in jobs if keep(j)]
 
     queue = []
     for j in jobs:
-        d = job_dir(*j, protocol=args.protocol)
-        st = job_state(d)
+        st = job_state(j.dir)
         if st == "DONE":
             continue
         if st == "RUNNING":
-            pid = json.load(open(os.path.join(d, "status.json"))).get("pid")
+            pid = json.load(open(os.path.join(j.dir, "status.json"))).get("pid")
             if pid and _pid_alive(pid):
-                print(f"[runner] skip live job {j}")
+                print(f"[runner] skip live job {j.id}")
                 continue
         queue.append(j)
     print(f"[runner] protocol={args.protocol} jobs pending: {len(queue)} "
@@ -105,8 +84,7 @@ def main(argv) -> int:
     log = open(os.path.join(LOGS_DIR, f"runner_{args.protocol}.log"), "a")
 
     def spawn(job, worker_idx):
-        algo, task, seed = job
-        d = job_dir(*job, protocol=args.protocol)
+        d = job.dir
         os.makedirs(d, exist_ok=True)
         gpu = gpus[worker_idx % len(gpus)]
         env = dict(os.environ)
@@ -115,14 +93,13 @@ def main(argv) -> int:
         env["OMP_NUM_THREADS"] = "8"
         env["MKL_NUM_THREADS"] = "8"
         env["OPENBLAS_NUM_THREADS"] = "8"
-        env["PYTHONPATH"] = os.path.dirname(os.path.dirname(os.path.dirname(
-            os.path.abspath(__file__))))  # exp root
-        cmd = [sys.executable, "-m", "mujoco_baselines.run.job",
-               args.protocol, algo, task, str(seed)]
+        env["PYTHONPATH"] = EXP_ROOT
+        env.pop("SPARC_CHECKOUT", None)
+        cmd = list(job.cmd)
         out = open(os.path.join(d, "stdout.log"), "a")
         err = open(os.path.join(d, "stderr.log"), "a")
-        proc = subprocess.Popen(cmd, env=env, stdout=out, stderr=err, cwd=env["PYTHONPATH"])
-        line = f"[runner] spawn worker{worker_idx} gpu{gpu} {job} pid {proc.pid}"
+        proc = subprocess.Popen(cmd, env=env, stdout=out, stderr=err, cwd=job.cwd)
+        line = f"[runner] spawn worker{worker_idx} gpu{gpu} {job.id} pid {proc.pid}"
         print(line, flush=True)
         log.write(line + "\n")
         log.flush()
@@ -130,30 +107,26 @@ def main(argv) -> int:
 
     retries = {}
     while qi < len(queue) or running:
-        # reap
         for w in list(running):
             job, proc, t0 = running[w]
             if proc.poll() is None:
                 continue
             del running[w]
-            algo, task, seed = job
-            d = job_dir(*job, protocol=args.protocol)
-            st = job_state(d)
+            st = job_state(job.dir)
             el = time.time() - t0
-            line = f"[runner] exit {job} rc={proc.returncode} state={st} {el:.0f}s"
+            line = f"[runner] exit {job.id} rc={proc.returncode} state={st} {el:.0f}s"
             print(line, flush=True)
             log.write(line + "\n")
-            if proc.returncode != 0 and st != "DONE" and retries.get(job, 0) < 2:
-                retries[job] = retries.get(job, 0) + 1
+            if proc.returncode != 0 and st != "DONE" and retries.get(job.id, 0) < 2:
+                retries[job.id] = retries.get(job.id, 0) + 1
                 queue.append(job)  # resume from checkpoint
-                line = f"[runner] requeue {job} (retry {retries[job]})"
+                line = f"[runner] requeue {job.id} (retry {retries[job.id]})"
                 print(line, flush=True)
                 log.write(line + "\n")
-        # fill
         while len(running) < args.workers and qi < len(queue):
             job = queue[qi]
             qi += 1
-            if job_state(job_dir(*job, protocol=args.protocol)) == "DONE":
+            if job_state(job.dir) == "DONE":
                 continue
             running[wi] = (job, *spawn(job, wi))
             wi = (wi + 1) % max(args.workers, 1)
