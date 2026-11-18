@@ -1,0 +1,356 @@
+{
+ "shared_budget": 3000000,
+ "train_seeds": [
+  0,
+  1,
+  2,
+  3,
+  4
+ ],
+ "eval_reset_seeds": [
+  20000,
+  20001,
+  20002,
+  20003,
+  20004,
+  20005,
+  20006,
+  20007,
+  20008,
+  20009,
+  20010,
+  20011,
+  20012,
+  20013,
+  20014,
+  20015,
+  20016,
+  20017,
+  20018,
+  20019,
+  20020,
+  20021,
+  20022,
+  20023,
+  20024,
+  20025,
+  20026,
+  20027,
+  20028,
+  20029
+ ],
+ "phys_sampler": {
+  "mass_mult": [
+   0.9,
+   1.1
+  ],
+  "friction_mult": [
+   0.9,
+   1.1
+  ]
+ },
+ "episode_cap": 1000,
+ "grids": {
+  "hopper": {
+   "n": 90,
+   "nominal_mass": 3.6651914291880923
+  },
+  "halfcheetah": {
+   "n": 154,
+   "nominal_mass": 6.25020920502092
+  },
+  "walker2d": {
+   "n": 64,
+   "nominal_mass": 3.6651914291880923
+  }
+ },
+ "algos": {
+  "rarl_ppo": {
+   "ppo": {
+    "learning_rate": 0.0003,
+    "n_steps": 2048,
+    "batch_size": 64,
+    "n_epochs": 10,
+    "gamma": 0.99,
+    "gae_lambda": 0.95,
+    "clip_range": 0.2,
+    "ent_coef": 0.0,
+    "vf_coef": 0.5,
+    "max_grad_norm": 0.5
+   },
+   "n_envs": 4,
+   "normalize": true,
+   "update_ratio": [
+    1,
+    1
+   ],
+   "warmup": 0,
+   "zero_force_prob": 0.0,
+   "adversary_force": 1.0,
+   "adversary_bodies": {
+    "hopper": [
+     "foot"
+    ],
+    "halfcheetah": [
+     "torso",
+     "bfoot",
+     "ffoot"
+    ],
+    "walker2d": [
+     "foot",
+     "foot_left"
+    ]
+   },
+   "adversary_axes": [
+    "x",
+    "z"
+   ],
+   "protagonist_steps": 1500000
+  },
+  "dr_ppo": {
+   "ppo": {
+    "learning_rate": 0.0003,
+    "n_steps": 2048,
+    "batch_size": 64,
+    "n_epochs": 10,
+    "gamma": 0.99,
+    "gae_lambda": 0.95,
+    "clip_range": 0.2,
+    "ent_coef": 0.0,
+    "vf_coef": 0.5,
+    "max_grad_norm": 0.5
+   },
+   "n_envs": 4,
+   "normalize": true,
+   "resample": "reset",
+   "steps": 3000000
+  },
+  "rma": {
+   "phase1_steps": 1500000,
+   "phase2_steps": 1500000,
+   "gamma": 0.99,
+   "tau": 0.005,
+   "batch_size": 32,
+   "learning_starts": 5000,
+   "policy_lr": 0.0003,
+   "q_lr": 0.0003,
+   "policy_frequency": 2,
+   "autotune": true,
+   "grad_clip_critic": 10.0,
+   "num_quantiles": 32,
+   "quantile_kappa": 1.0,
+   "top_quantiles_to_drop": 0,
+   "history_length": 50,
+   "adapter_lr": 0.0003,
+   "context_dim": 2,
+   "device": "cpu"
+  },
+  "qarl": {
+   "actor_lr": 0.0003,
+   "utd": 1,
+   "adversary_force": 1.0,
+   "adversary_bodies": {
+    "hopper": [
+     "foot"
+    ],
+    "halfcheetah": [
+     "torso",
+     "bfoot",
+     "ffoot"
+    ],
+    "walker2d": [
+     "foot",
+     "foot_left"
+    ]
+   },
+   "adversary_axes": [
+    "x",
+    "z"
+   ],
+   "initial_conc": 50.0,
+   "target_conc": 1.0,
+   "fixed_rate": 1000.0,
+   "conc_lower_bound": 1e-08,
+   "max_kl": 0.5,
+   "target_kl_threshold": 0.01,
+   "n_samples_for_dist_update": 30,
+   "performance_lower_bound": {
+    "hopper": 1.0,
+    "halfcheetah": 10.0,
+    "walker2d": 10.0
+   },
+   "n_episodes_per_iteration": 30,
+   "steps": 3000000,
+   "device": "cpu"
+  },
+  "mbpo": {
+   "sac": {
+    "gamma": 0.99,
+    "tau": 0.005,
+    "alpha": 0.2,
+    "lr": 0.0003,
+    "batch": 256,
+    "hidden": [
+     256,
+     256
+    ],
+    "target_entropy": "auto"
+   },
+   "model": {
+    "hidden": [
+     200,
+     200,
+     200,
+     200
+    ],
+    "ensemble": 7,
+    "elites": 5,
+    "lr": 0.001,
+    "batch": 256,
+    "holdout_ratio": 0.2,
+    "inc_var_loss": true,
+    "epsilon": 0.0001,
+    "max_model_train_iterations": 12000
+   },
+   "rollout": {
+    "horizon": 1,
+    "batch": 100000,
+    "mini_batch": 10000,
+    "retain_epochs": 1,
+    "model_env_ratio": 0.95
+   },
+   "warmup": 5000,
+   "utd": 2,
+   "train_model_interval": {
+    "hopper": 6000,
+    "halfcheetah": 1875,
+    "walker2d": 2500
+   },
+   "max_model_update_epochs_to_improve": 5,
+   "epoch_length": 1000,
+   "device": "cpu",
+   "env_buffer": 1000000,
+   "model_buffer": 2000000,
+   "budget": 3000000
+  },
+  "rmbpo_eta": {
+   "hopper": 4.0,
+   "halfcheetah": 0.5,
+   "walker2d": 0.5
+  },
+  "rmbpo_aux": {
+   "hidden": [
+    200,
+    200,
+    200,
+    200
+   ],
+   "lr": 0.001,
+   "batch": 256,
+   "max_train_iterations": 2000
+  }
+ },
+ "phase_a": {
+  "rarl_ppo": {
+   "env": "v5",
+   "steps": 2000000,
+   "adversary_force": 5.0,
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "episodes_per_cell": 20,
+   "grid": "robustrllib part1_mujoco (24 perturbed cells + nominal)"
+  },
+  "rma": {
+   "env": "v5-wind",
+   "phase_steps": 3000000,
+   "episodes_per_cell": 30,
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "grid": "9x9 wind grid per task; aggregate strictly-outside-train-rect"
+  },
+  "dr_ppo": {
+   "env": "v3-recon",
+   "steps": 1500000,
+   "episodes_per_cell": 30,
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "eval_point": "mass x1.2 (nominal friction)",
+   "mass_range": {
+    "hopper": [
+     0.5,
+     6.5
+    ],
+    "halfcheetah": [
+     3.5,
+     9.5
+    ],
+    "walker2d": [
+     0.5,
+     6.5
+    ]
+   },
+   "friction_range": {
+    "hopper": [
+     0.1,
+     3.0
+    ],
+    "halfcheetah": [
+     0.2,
+     0.8
+    ],
+    "walker2d": [
+     0.5,
+     2.0
+    ]
+   }
+  },
+  "qarl": {
+   "env": "v4",
+   "steps": {
+    "hopper": 1000000,
+    "halfcheetah": 3000000,
+    "walker2d": 1000000
+   },
+   "eval_grid": "unified mass x friction grid (\u00a74.3)",
+   "episodes_per_cell": 30,
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ]
+  },
+  "mbpo": {
+   "env": "v4",
+   "weights": "upstreams/rmbpo-tmlr/weights/<task>-v4/mbpo/",
+   "episodes_per_cell": 30,
+   "evaluator": "author main_eval.py"
+  },
+  "rmbpo": {
+   "env": "v4",
+   "weights": {
+    "hopper": "rmbpo_4",
+    "halfcheetah": "rmbpo_05",
+    "walker2d": "rmbpo_05"
+   },
+   "episodes_per_cell": 30,
+   "evaluator": "author main_eval.py"
+  }
+ }
+}
