@@ -86,10 +86,14 @@ def run_agent(agent: str, task: str) -> int:
         print(f"[rmbpo_eval] FAILED {agent}/{task} rc={rc}", file=sys.stderr)
         return rc
     # copy author pkl into the job dir (results_data/<env_name>/<sub>/ — env_name
-    # casing follows each config: Hopper-v4 is capitalised, others lowercase)
+    # casing follows each config: Hopper-v4 is capitalised, others lowercase;
+    # the glob is anchored to THIS task's env_name because concurrent lanes of
+    # the same agent share the checkout's results_data tree)
     import glob
     import shutil
-    hits = glob.glob(os.path.join(CHECKOUT, "results_data", "*", sub,
+    env_name = {"hopper": "Hopper-v4", "halfcheetah": "halfcheetah-v4",
+                "walker2d": "walker2d-v4"}[task]
+    hits = glob.glob(os.path.join(CHECKOUT, "results_data", env_name, sub,
                                   "friction_p_torso_mass-mean.pkl"))
     dst = os.path.join(job_dir, "author_output.pkl")
     if hits:
