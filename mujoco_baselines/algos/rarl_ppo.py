@@ -107,26 +107,22 @@ def _make_agent(hp, venv, seed, lr):
     return PPO(policy, venv, seed=seed, verbose=0, device="cpu", **kwargs)
 
 
-def _learn_exact(agent, n_envs, target, batch_size):
-    """Drive the agent to exactly `target` num_timesteps with updatable blocks.
-
-    learn(total_timesteps=T, reset_num_timesteps=False) is incremental in SB3;
-    when the remaining T is below one block, n_steps is trimmed to an
-    exactly-updatable length and the rollout buffer reallocated to match (SB3
-    allocates it only at construction, so a trimmed block would otherwise
-    never mark itself full)."""
+def _learn_one(agent, remaining, n_envs, batch_size):
+    """One PPO block (n_steps x n_envs), trimmed to `remaining` when it is the
+    last block (rollout buffer reallocated to the trimmed length so the final
+    block is updatable; see the SB3 notes in the module docstring)."""
     from stable_baselines3.common.buffers import RolloutBuffer
-    while agent.num_timesteps < target:
-        block = agent.n_steps * n_envs
-        remaining = target - agent.num_timesteps
-        if remaining < block:
-            rem_env = max(remaining // n_envs, batch_size)
-            agent.n_steps = int(rem_env)
-            agent.rollout_buffer = RolloutBuffer(
-                agent.n_steps, agent.observation_space, agent.action_space,
-                device=agent.device, gamma=agent.gamma, gae_lambda=agent.gae_lambda,
-                n_envs=n_envs)
-        agent.learn(total_timesteps=(agent.n_steps * n_envs), reset_num_timesteps=False)
+    block = agent.n_steps * n_envs
+    total = block if remaining >= block else remaining
+    if remaining < block:
+        rem_env = max(remaining // n_envs, batch_size)
+        agent.n_steps = int(rem_env)
+        agent.rollout_buffer = RolloutBuffer(
+            agent.n_steps, agent.observation_space, agent.action_space,
+            device=agent.device, gamma=agent.gamma, gae_lambda=agent.gae_lambda,
+            n_envs=n_envs)
+        total = rem_env * n_envs
+    agent.learn(total_timesteps=total, reset_num_timesteps=False)
 
 
 def train(job_dir: str, task: str, seed: int, cfg: dict) -> None:
@@ -172,17 +168,25 @@ def train(job_dir: str, task: str, seed: int, cfg: dict) -> None:
     t0 = time.time()
     prog = open(os.path.join(job_dir, "progress.jsonl"), "a")
 
-    while pro.num_timesteps < pro_budget:
-        _learn_exact(pro, n_envs, pro_budget, hp["batch_size"])
-        ret = np.mean([e["r"] for e in pro.ep_info_buffer]) if pro.ep_info_buffer else float("nan")
-        prog.write(json.dumps({"protagonist_steps": pro.num_timesteps,
-                               "adversary_steps": adv.num_timesteps,
-                               "episode_return": float(ret),
-                               "wall_s": time.time() - t0}) + "\n")
-        prog.flush()
-        # 1:1 adversary share, interleaved
-        adversary.active = True
-        _learn_exact(adv, n_envs, pro_budget, hp["batch_size"])
+    # alternating 1:1 blocks (upstream update_ratio [1,1]): one protagonist
+    # block, then one adversary block, repeated until BOTH have spent their
+    # share of the shared 3M counter (protagonist 1.5M + adversary 1.5M)
+    while True:
+        pro_rem = pro_budget - pro.num_timesteps
+        if pro_rem > 0:
+            _learn_one(pro, pro_rem, n_envs, hp["batch_size"])
+            ret = np.mean([e["r"] for e in pro.ep_info_buffer]) if pro.ep_info_buffer else float("nan")
+            prog.write(json.dumps({"protagonist_steps": pro.num_timesteps,
+                                   "adversary_steps": adv.num_timesteps,
+                                   "episode_return": float(ret),
+                                   "wall_s": time.time() - t0}) + "\n")
+            prog.flush()
+        adv_rem = pro_budget - adv.num_timesteps
+        if adv_rem > 0:
+            adversary.active = True
+            _learn_one(adv, adv_rem, n_envs, hp["batch_size"])
+        if pro_rem <= 0 and adv_rem <= 0:
+            break
     # final checkpoint at exact budget
     os.makedirs(ck, exist_ok=True)
     saved = os.path.join(ck, "step_final.zip")
