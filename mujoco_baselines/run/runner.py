@@ -95,6 +95,7 @@ def main(argv) -> int:
         env["OPENBLAS_NUM_THREADS"] = "2"
         env["NUMEXPR_NUM_THREADS"] = "2"
         env["PYTHONPATH"] = EXP_ROOT
+        env["PYTHONUNBUFFERED"] = "1"
         env.pop("SPARC_CHECKOUT", None)
         cmd = list(job.cmd)
         out = open(os.path.join(d, "stdout.log"), "a")

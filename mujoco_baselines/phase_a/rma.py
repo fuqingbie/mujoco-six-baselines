@@ -47,6 +47,7 @@ def main(task: str, seed: int) -> int:
     env["PYTHONPATH"] = CHECKOUT
     env["SPARC_CHECKOUT"] = CHECKOUT
     env["WANDB_MODE"] = "disabled"
+    env["PYTHONUNBUFFERED"] = "1"
     env.setdefault("CUDA_MPS_PIPE_DIRECTORY", "/tmp/mjb-no-mps")
     env.setdefault("OMP_NUM_THREADS", "8")
     env_id = ENV_IDS[task]
