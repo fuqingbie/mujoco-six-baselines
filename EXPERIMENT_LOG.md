@@ -91,3 +91,14 @@ python -m mujoco_baselines.phase_a.rmbpo_eval <mbpo|rmbpo> <task>
 - RMBPO 两处修复：鲁棒性损失的 pred_state 须 diff+obs 重构；辅助轮加
   max_train_iterations=2000 上限（论文"while improving"规则在拉长预算下不终止）。
   名义模型训练同样加上游计算包络上限 12000 iters/轮。
+
+## 8. 六方法验证终态（全部通过）
+
+| 方法 | 验证 |
+|---|---|
+| RARL-PPO | 1:1 交替块重写后冒烟：pro 10000 + adv 10000 = 20000 精确 |
+| DR-PPO | 冒烟三任务全过、精确预算 |
+| RMA | 位级确定性、历史重置语义、双相位端到端 |
+| QARL | 33/33 冒烟 + 求职胶水测试（计数/记录/manifest） |
+| MBPO | 6k 步全任务学习曲线正常（holdout MSE 0.0066） |
+| RMBPO | 旁路测试位级一致 ×3 轮（含修复后）+ 上限验证 3000 步完整收敛（aux_rounds 5 全部终止） |
