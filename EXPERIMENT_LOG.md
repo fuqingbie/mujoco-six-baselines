@@ -77,3 +77,17 @@ python -m mujoco_baselines.phase_a.rmbpo_eval <mbpo|rmbpo> <task>
 - 阶段B：90 作业×3M 转移；RMA ~68 sps/作业（CPU）、QARL ~59、MBPO ~36（CPU）
 - 阶段A：66 作业；作者复测每配置 12-16 分钟
 - 故障重试：runner 对 rc≠0 作业自动重排队（≤2 次），支持从检查点续跑
+
+## 7. 资源实况与调度（运行期发现）
+
+- **cgroup CPU 配额 = 94 核**（/sys/fs/cgroup cpu.cfs_quota_us=9,400,000/100,000），
+  尽管机器名义 384 核。初期 90 作业×8 线程造成 load 600 的线程风暴，已统一
+  OMP_NUM_THREADS=2。
+- **两卡被外部租户 ~22 个 GPU 进程长期占用**（nvidia-smi 可见，非本容器），
+  全部训练走 CPU 路径（实测小网络 CPU 快 3-5 倍且不受争抢）。
+- **带宽竞争**：并发作业越多单步越慢（70 作业 27ms/步 → 32 作业 ~12ms/步），
+  watchdog（tools/watchdog.py）以 32 活跃作业为目标自动分期：P0 非模型族 →
+  P1 模型双族 → P2 阶段A 训练 lane；SIGSTOP/CONT 树级暂停恢复。
+- RMBPO 两处修复：鲁棒性损失的 pred_state 须 diff+obs 重构；辅助轮加
+  max_train_iterations=2000 上限（论文"while improving"规则在拉长预算下不终止）。
+  名义模型训练同样加上游计算包络上限 12000 iters/轮。
