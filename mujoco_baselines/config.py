@@ -92,7 +92,12 @@ MODEL_BASED_COMMON = dict(
     sac=dict(gamma=0.99, tau=0.005, alpha=0.2, lr=3e-4, batch=256,
              hidden=(256, 256), target_entropy="auto"),
     model=dict(hidden=(200, 200, 200, 200), ensemble=7, elites=5, lr=1e-3,
-               batch=256, holdout_ratio=0.2, inc_var_loss=True, epsilon=1e-4),
+               batch=256, holdout_ratio=0.2, inc_var_loss=True, epsilon=1e-4,
+               # upstream compute envelope: at the paper's budgets a model round
+               # never exceeds ~10-12k iterations (buffer/256 x early-stopped
+               # epochs); the cap only binds in the 3M stretched regime where
+               # uncapped rounds would train 10-100x longer than any paper round
+               max_model_train_iterations=12000),
     rollout=dict(horizon=1, batch=100_000, mini_batch=10_000, retain_epochs=1,
                  model_env_ratio=0.95),
     warmup=5000,
