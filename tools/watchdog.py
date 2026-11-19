@@ -18,7 +18,7 @@ import time
 
 ROOT = "/root/mjbexp"
 LOG = os.path.join(ROOT, "logs/watchdog.log")
-TARGET = 60
+TARGET = 40
 
 
 def pids_matching(*needles):
@@ -136,7 +136,15 @@ def main():
                 f"stopped_trees={len(stopped_trees)} pri_active="
                 + str([sum(1 for t in active_trees if t["pri"] == p) for p in (0, 1, 2)]))
         if len(active_trees) < TARGET and stopped_trees:
-            for t in stopped_trees[:TARGET - len(active_trees)]:
+            # Phase-B first (user decision 2026-11-19): source lanes (P2) only
+            # resume once no P0/P1 (phase-B) work remains active or stopped
+            p01_active = sum(1 for t in active_trees if t["pri"] < 2)
+            p01_stopped = [t for t in stopped_trees if t["pri"] < 2]
+            if p01_active == 0 and not p01_stopped:
+                candidates = stopped_trees
+            else:
+                candidates = p01_stopped
+            for t in candidates[:TARGET - len(active_trees)]:
                 for pri, pid, _ in t["stopped"]:
                     try:
                         os.kill(pid, 18)
@@ -154,6 +162,26 @@ def main():
                     except ProcessLookupError:
                         pass
                 active_trees.remove(t)
+        # memory guard: the 09:58 OOM storm (39 kills, whole fleet wiped) came
+        # from cgroup memory pressure; freeze the newest jobs when close to it
+        try:
+            with open("/sys/fs/cgroup/memory/memory.usage_in_bytes") as f:
+                usage = int(f.read())
+            limit = 590558003200
+            if usage > 0.82 * limit:
+                frozen = 0
+                for t in sorted(active_trees, key=lambda t: -t["pri"]):
+                    if frozen >= 4:
+                        break
+                    for pri, pid, _ in t["active"]:
+                        try:
+                            os.kill(pid, 19)
+                            frozen += 1
+                        except ProcessLookupError:
+                            pass
+                line += f" MEMGUARD {usage/1e9:.0f}GB froze {frozen}"
+        except (FileNotFoundError, ProcessLookupError):
+            pass
         with open(LOG, "a") as f:
             f.write(line + "\n")
         time.sleep(120)
