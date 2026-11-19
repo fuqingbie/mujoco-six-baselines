@@ -101,6 +101,7 @@ MODEL_BASED_COMMON = dict(
     rollout=dict(horizon=1, batch=100_000, mini_batch=10_000, retain_epochs=1,
                  model_env_ratio=0.95),
     warmup=5000,
+    save_state_every=100_000,  # OOM-risk insurance: 250k default lost ~114k steps in the 11-19 storm
     utd=2,                     # num_agent_updates_per_env_step (kept per-real-step)
     train_model_interval={t: int(round(250 * _MBPO_SCALE[t])) for t in _MBPO_ORIG},
     max_model_update_epochs_to_improve=5,
