@@ -67,7 +67,33 @@ def spawn(algo, task, seed):
     return proc.pid
 
 
+def all_shared_done():
+    """All 22 GPU-owned model jobs DONE (HANDOFF/DONE both count as settled;
+    HANDOFF jobs were handed to CPU nodes and are not ours to wait for)."""
+    for (algo, task, seed) in GPU_JOBS:
+        if state_of(algo, task, seed) != "DONE":
+            return False
+    return True
+
+
+def launch_source_runner():
+    """shared -> source transition (task: shared first, then source): start the
+    controlled source-protocol queue once our shared jobs are settled. The
+    runner is HANDOFF-aware and will never re-claim CPU-owned jobs."""
+    env = dict(os.environ)
+    env.update(CUDA_MPS_PIPE_DIRECTORY="/tmp/mjb-mps-pipe",
+                PYTHONPATH=ROOT, OMP_NUM_THREADS="2")
+    cmd = ["/root/mjbexp/envs/mjb/bin/python", "-m", "mujoco_baselines",
+           "run", "--protocol", "source", "--workers", "20", "--resume"]
+    out = open(os.path.join(ROOT, "logs/runner_source_5.log"), "a")
+    err = open(os.path.join(ROOT, "logs/runner_source_5.log"), "a")
+    proc = subprocess.Popen(cmd, env=env, stdout=out, stderr=err, cwd=ROOT,
+                            start_new_session=True)
+    return proc.pid
+
+
 def main():
+    source_started = False
     with open(LOG, "a") as log:
         log.write(f"[babysitter] start {time.strftime('%F %T')} watching {len(GPU_JOBS)} jobs\n")
     while True:
@@ -81,7 +107,11 @@ def main():
             if key not in live:
                 pid = spawn(algo, task, seed)
                 events.append(f"respawn {algo}/{task}/s{seed} pid {pid}")
-        line = f"{time.strftime('%F %T')} live={len(live)} " + ("; ".join(events) if events else "")
+        if not source_started and all_shared_done():
+            pid = launch_source_runner()
+            events.append(f"SOURCE_RUNNER started pid {pid}")
+            source_started = True
+        line = f"{time.strftime('%F %T')} live={len(live)} source={'on' if source_started else 'off'} " + ("; ".join(events) if events else "")
         with open(LOG, "a") as log:
             log.write(line + "\n")
         time.sleep(120)
