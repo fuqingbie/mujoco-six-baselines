@@ -28,6 +28,12 @@ def job_state(d):
         return "PENDING"
 
 
+def _released(d):
+    """HANDOFF marks jobs handed to another node (four-machine split); the GPU
+    queue must never re-claim or re-spawn them."""
+    return job_state(d) in ("DONE", "HANDOFF")
+
+
 def _pid_alive(pid):
     try:
         os.kill(pid, 0)
@@ -65,7 +71,7 @@ def main(argv) -> int:
     queue = []
     for j in jobs:
         st = job_state(j.dir)
-        if st == "DONE":
+        if st in ("DONE", "HANDOFF"):
             continue
         if st == "RUNNING":
             pid = json.load(open(os.path.join(j.dir, "status.json"))).get("pid")
@@ -134,7 +140,7 @@ def main(argv) -> int:
         while len(running) < args.workers and qi < len(queue):
             job = queue[qi]
             qi += 1
-            if job_state(job.dir) == "DONE":
+            if _released(job.dir):
                 continue
             running[wi] = (job, *spawn(job, wi))
             wi = (wi + 1) % max(args.workers, 1)
