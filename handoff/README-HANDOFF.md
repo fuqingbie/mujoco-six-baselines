@@ -1,7 +1,20 @@
 # GPU 节点四机交接包（round: gpu-release-20261119-01）
 
 GPU 节点（原双 H20，本机）→ any3 / any7 / any8 三台 CPU 节点的源码与可恢复快照交接。
-**SSH/代理 CONNECT 均不通（出口受限），本目录为可交付形态**——请通过当前会话转交 CPU 执行方，或由用户搬运。
+**SSH/代理 CONNECT 均不通（出口受限）**——交接内容已全部上传 GitHub Release（匿名可下载）：
+
+**https://github.com/fuqingbie/mujoco-six-baselines/releases/tag/handoff-20261119-01**
+
+| 资产 | 内容 | 体积 | SHA-256（前 16 位） |
+|---|---|---|---|
+| `source-package.tar.gz` | 完整源码（package_sha256=5b3208fa…800c342） | 0.5MB | — |
+| `handoff-any3.tar.gz` | any3 名下 16 作业快照 | 88.8MB | 5eab2b81602eaeea |
+| `handoff-any7.tar.gz` | any7 名下 15 作业快照 | 1883MB | d0eb1a5c3c219d89 |
+| `handoff-any8.tar.gz` | any8 名下 7 作业快照 | 704MB | 7f32dc9c9b970326 |
+| `*.sha256` | 各资产校验和 | — | — |
+
+CPU 侧：匿名 `curl -L -O` 下载各资产 → `sha256sum -c` 校验 → 解包到工作根目录（得到 `checkpoints/<algo>/<task>/seed<N>/`）→ 源码指纹对齐 `staged-package.sha256` → 收据在仓库 `handoff/inbox/handoff.json`（approved: true，按 `target` 认领）。逐 ckpt 文件 SHA-256 也在收据内。
+本地同等备份保留在 GPU 节点 `/root/mujoco-six-fleet-handoff/`。
 
 ## 目录内容
 
