@@ -1,10 +1,10 @@
-upstreams/
-runs/
-episodes/
-logs/
-reports/
-envs/
-refs/
+/upstreams/
+/runs/
+/episodes/
+/logs/
+/reports/
+/envs/
+/refs/
 __pycache__/
 *.pyc
 results_data/
