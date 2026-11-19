@@ -1,0 +1,489 @@
+{
+ "round_id": "gpu-release-20261119-01",
+ "approved": true,
+ "source_host": "ts-8b1d803da0af10aa01a0bd0258851505-launcher",
+ "source_revision": "819353e4e6ff7deb3a11389248da8d5351cfa0a8",
+ "package_sha256": "5b3208fabf343581935a7969f5d62aea249627d2e0e843178995b6f1d800c342",
+ "notes": [
+  "GPU queue released: both runners killed before export; migrated processes SIGSTOP->snapshot->SIGKILL; status.json of every handed-off job set to HANDOFF; patched runner skips HANDOFF like DONE (no re-claim).",
+  "checkpoint_step is the recoverable step derived from the state file (state_5000.pt=5000; RMA phase1_state.pt at its 200k boundary; QARL state.pt at its iteration boundary). counters.json in the snapshot may show higher log steps - resume must count from checkpoint_step.",
+  "GPU keeps 22 model jobs (11 mbpo: hopper 0-4 + halfcheetah 0-4 + walker2d seed4; 11 rmbpo: hopper 0,3,4 + halfcheetah 2,3,4 + walker2d 0-4) plus all 66 source-protocol jobs (unclaimed this round, gated after shared).",
+  "episodes parquet writes must not run concurrently against the same algo+task file across nodes; final merge dedups by (protocol,algo,task,seed) and verifies 30 episodes/condition."
+ ],
+ "jobs": [
+  {
+   "protocol": "shared",
+   "algo": "mbpo",
+   "task": "walker2d",
+   "seed": 0,
+   "target": "any3",
+   "config_sha256": "b3e4bba5fc59e3d39dcd3fe5bbf715766e383ae5cc0403c58bca381423132166",
+   "state": "checkpoint",
+   "checkpoint_step": 5000,
+   "checkpoint_sha256": {
+    "ckpt/state_5000.pt": "a092e72ee81a45c16a18b51ad56d2fa2531bf13eeb704835f3d9e2ee1d7af40d"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "mbpo",
+   "task": "walker2d",
+   "seed": 1,
+   "target": "any3",
+   "config_sha256": "d77e26bfd0a486d9c9664689d3a4a95cf5369c7125256ecf0ba101d794092c4c",
+   "state": "checkpoint",
+   "checkpoint_step": 5000,
+   "checkpoint_sha256": {
+    "ckpt/state_5000.pt": "4e1b0ecbf685fda7744905b4435527803878613feb7959eb9206749f5aa30b67"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "mbpo",
+   "task": "walker2d",
+   "seed": 2,
+   "target": "any3",
+   "config_sha256": "8964d28424eab782d756891387814e6e656f8396728242f1e508b358480fbfda",
+   "state": "checkpoint",
+   "checkpoint_step": 5000,
+   "checkpoint_sha256": {
+    "ckpt/state_5000.pt": "8ccdc33245c35d9db59b174ca11532d7e578246549410e276156006877765087"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "mbpo",
+   "task": "walker2d",
+   "seed": 3,
+   "target": "any3",
+   "config_sha256": "eac37f826669f1073be15557e5d2857ef4c6e438231a04cbc012dd530a0585d8",
+   "state": "checkpoint",
+   "checkpoint_step": 5000,
+   "checkpoint_sha256": {
+    "ckpt/state_5000.pt": "95255f968c71e6a8f86e3c6175dc07bed5a36eef15a6759b420d74c9bbcc9ae4"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "qarl",
+   "task": "halfcheetah",
+   "seed": 0,
+   "target": "any3",
+   "config_sha256": "eb0a3d387adf4dca3bdb1dd55243b55864f76ac40cd88fd64bb469957071a920",
+   "state": "pending"
+  },
+  {
+   "protocol": "shared",
+   "algo": "qarl",
+   "task": "halfcheetah",
+   "seed": 1,
+   "target": "any3",
+   "config_sha256": "1514962e5a5bcdc3d0a3a69d9122b460fe699bf516c710677de5178618fe603c",
+   "state": "pending"
+  },
+  {
+   "protocol": "shared",
+   "algo": "qarl",
+   "task": "halfcheetah",
+   "seed": 2,
+   "target": "any3",
+   "config_sha256": "fc6141f9a022e85415b7cc1a9f4a2a5d5202c4372ba8e3419abf069b78096820",
+   "state": "pending"
+  },
+  {
+   "protocol": "shared",
+   "algo": "qarl",
+   "task": "halfcheetah",
+   "seed": 3,
+   "target": "any3",
+   "config_sha256": "cdbe54efd5e72230b02a1af678ee578557a3af17e22b2d8e52e7bf598f625e45",
+   "state": "pending"
+  },
+  {
+   "protocol": "shared",
+   "algo": "qarl",
+   "task": "halfcheetah",
+   "seed": 4,
+   "target": "any3",
+   "config_sha256": "88b49fcefce9abcb3768030418af78c8c8055c74016360ac02d68809de95aef4",
+   "state": "pending"
+  },
+  {
+   "protocol": "shared",
+   "algo": "qarl",
+   "task": "hopper",
+   "seed": 0,
+   "target": "any7",
+   "config_sha256": "826c76e692843a5e5f08952d629688ac7524ec63bfb31f665792b226f469d40f",
+   "state": "checkpoint",
+   "checkpoint_step": 614947,
+   "checkpoint_sha256": {
+    "ckpt/state.pt": "2a0e8d54424b7fc6404558f7849c427f33e670483f491711c7aba6bff89ed0f3"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "qarl",
+   "task": "hopper",
+   "seed": 1,
+   "target": "any7",
+   "config_sha256": "e3562b3c7800160a9c26534335ee7481e6e5fb3f6221d649a60060def5cf948d",
+   "state": "checkpoint",
+   "checkpoint_step": 715798,
+   "checkpoint_sha256": {
+    "ckpt/state.pt": "df46c70282b9648bbbf1fe78e595f0dbc07a091ffca8e94d317826e291355ffa"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "qarl",
+   "task": "hopper",
+   "seed": 2,
+   "target": "any7",
+   "config_sha256": "86351893c1358a3ed6fe8b6993cab6838ced56cef606df4dc71457067029fed8",
+   "state": "checkpoint",
+   "checkpoint_step": 659580,
+   "checkpoint_sha256": {
+    "ckpt/state.pt": "4076d2dc06072a5d2561769397ce966972e72c4dc6d62885d8a0bdc8b7488d93"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "qarl",
+   "task": "hopper",
+   "seed": 3,
+   "target": "any8",
+   "config_sha256": "cb48207deb54ccf663056b63139c989a713a6c98270506403fa6e13aac0e61b1",
+   "state": "checkpoint",
+   "checkpoint_step": 700077,
+   "checkpoint_sha256": {
+    "ckpt/state.pt": "d6c5c4386ac2e829d274466355d701f5484fab49d7a82a365990afcda0a6d97a"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "qarl",
+   "task": "hopper",
+   "seed": 4,
+   "target": "any8",
+   "config_sha256": "75c54424ae11d6ddc546f0c4b7257d143b2736fc3c5287019cc32e39e7d89606",
+   "state": "checkpoint",
+   "checkpoint_step": 742258,
+   "checkpoint_sha256": {
+    "ckpt/state.pt": "b58db56d59000427281d6db30a49890561f923492151b114866ae6fd5a3a81cc"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "qarl",
+   "task": "walker2d",
+   "seed": 0,
+   "target": "any3",
+   "config_sha256": "5bb6c21e736ab4276db40e1517797a8f24c4d01bdc78ddc03900f1bb4ef6e427",
+   "state": "checkpoint",
+   "checkpoint_step": 6852,
+   "checkpoint_sha256": {
+    "ckpt/state.pt": "b1b8dd451749f31205b1a7430d5ff4aa38ea0eae585731d44bed707cd81a51b1"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "qarl",
+   "task": "walker2d",
+   "seed": 1,
+   "target": "any3",
+   "config_sha256": "9b95cc94b7684da898a8835ca567e33713f8712abc718040cb89b1ee56ecd0fb",
+   "state": "checkpoint",
+   "checkpoint_step": 7145,
+   "checkpoint_sha256": {
+    "ckpt/state.pt": "2a933b6698a14c38ea5ccc067f6fbfeda18f47a913f916508a86fd3a313e1a8f"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "qarl",
+   "task": "walker2d",
+   "seed": 2,
+   "target": "any3",
+   "config_sha256": "d3cc816501453ffd2079b102ea3acef275c6454bc68924af36f34ac3d39415a6",
+   "state": "checkpoint",
+   "checkpoint_step": 6864,
+   "checkpoint_sha256": {
+    "ckpt/state.pt": "975ecb6ad4429b4658b0a5b08c159fd9e1bf88c796013cbcfcb9f4be129e097f"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "qarl",
+   "task": "walker2d",
+   "seed": 3,
+   "target": "any8",
+   "config_sha256": "a3b25fe2feae57a840013761c6e3838003b8ba3673d84ecd6821beef182c16a7",
+   "state": "checkpoint",
+   "checkpoint_step": 6497,
+   "checkpoint_sha256": {
+    "ckpt/state.pt": "8463b6f3b47df9edebbc3b08ada3a8e1bf91ff3ae5fea98a165d78a3f1b8a23b"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "qarl",
+   "task": "walker2d",
+   "seed": 4,
+   "target": "any8",
+   "config_sha256": "3ee80ef28ecf91c2e766c9025ea31ff835c6f32f131a6c1a3480a424128f7010",
+   "state": "checkpoint",
+   "checkpoint_step": 6195,
+   "checkpoint_sha256": {
+    "ckpt/state.pt": "01089c0b3bd59e38ecfceb957454e2b949337bd8da362e98b9655265e3042a77"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "rma",
+   "task": "halfcheetah",
+   "seed": 0,
+   "target": "any7",
+   "config_sha256": "c493352d0ba243177bff2ddd3217a498400289813f8c293183bb681a40139536",
+   "state": "checkpoint",
+   "checkpoint_step": 800000,
+   "checkpoint_sha256": {
+    "ckpt/phase1_state.pt": "cbd13c06f065703e4668130c82bb19bf36bc89f26bf66a875f621ffafeeb40a2"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "rma",
+   "task": "halfcheetah",
+   "seed": 1,
+   "target": "any7",
+   "config_sha256": "7847a53a518c9031cadb16b64d609d9dcc9e3c6a76964f160ebfd90ee9148e8c",
+   "state": "checkpoint",
+   "checkpoint_step": 1000000,
+   "checkpoint_sha256": {
+    "ckpt/phase1_state.pt": "dc800122c0419e1cd4c4023d32436022cc14624e24fab8f4672b89c922be5d06"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "rma",
+   "task": "halfcheetah",
+   "seed": 2,
+   "target": "any7",
+   "config_sha256": "e1dc132c697632e10c248c58216bbb8264beeb466007666bdff9c6ec9c0a4971",
+   "state": "checkpoint",
+   "checkpoint_step": 800000,
+   "checkpoint_sha256": {
+    "ckpt/phase1_state.pt": "3d38e64c09c26fa64c0dbd9880bfb403fab50448e6003ed7dad9eff1c5e85783"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "rma",
+   "task": "halfcheetah",
+   "seed": 3,
+   "target": "any7",
+   "config_sha256": "b95e55265a2955a63118ea7708c9d9d474780ab157767a6f0cfcf52924a40c9b",
+   "state": "checkpoint",
+   "checkpoint_step": 800000,
+   "checkpoint_sha256": {
+    "ckpt/phase1_state.pt": "629a85bbc94a118dac5a44f86ef04ad6e6b11948e52cda6726ebdb018e767a7d"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "rma",
+   "task": "halfcheetah",
+   "seed": 4,
+   "target": "any7",
+   "config_sha256": "04e0cd4ee7828ffb94f20006899214f9cffe6c4b768922d73ae87d9996879d2f",
+   "state": "checkpoint",
+   "checkpoint_step": 800000,
+   "checkpoint_sha256": {
+    "ckpt/phase1_state.pt": "b4f6477d5830007dd5210265f964697e35b3fe6e05de51e4d85370d9c7eb8a59"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "rma",
+   "task": "hopper",
+   "seed": 0,
+   "target": "any7",
+   "config_sha256": "3957a75402c3bb627314cebe16e7def7a129a50dcca7a13769c44ec41d14bf89",
+   "state": "checkpoint",
+   "checkpoint_step": 800000,
+   "checkpoint_sha256": {
+    "ckpt/phase1_state.pt": "7755bdf9c3a65235b1f5d56b72e3f3669aa33181354262959e190425d36d6a8a"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "rma",
+   "task": "hopper",
+   "seed": 1,
+   "target": "any7",
+   "config_sha256": "8364dc1d326976b3d50f0060b7fd0ec02d1a9ecd30aea7d41855ad4c9e6cfabe",
+   "state": "checkpoint",
+   "checkpoint_step": 800000,
+   "checkpoint_sha256": {
+    "ckpt/phase1_state.pt": "6dc3e7d001a74d024104ba15f636b0b94e2809b0f22db0f83b26872a8bd3ba8d"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "rma",
+   "task": "hopper",
+   "seed": 2,
+   "target": "any7",
+   "config_sha256": "3bdc7cbd444d28653e41931ea73f7fe83579863d78bd896c886ac198afbac274",
+   "state": "checkpoint",
+   "checkpoint_step": 1000000,
+   "checkpoint_sha256": {
+    "ckpt/phase1_state.pt": "a6a539c8d499f2a27002cb56a389dc43e50d270f61603e11b29616d68d910418"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "rma",
+   "task": "hopper",
+   "seed": 3,
+   "target": "any7",
+   "config_sha256": "563e6e7730a57b661326f37d57c52d2264a5c464935b6b4fff2874d2db454a10",
+   "state": "checkpoint",
+   "checkpoint_step": 800000,
+   "checkpoint_sha256": {
+    "ckpt/phase1_state.pt": "fe51715025981d1e47e2c7f9b9a66989e08d4bf69ef6f2e8dd587ce9465e6dd8"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "rma",
+   "task": "hopper",
+   "seed": 4,
+   "target": "any7",
+   "config_sha256": "4e1b0f182445f2176f203a2cce85c36cfdfbf58715ae5f3125375b754069131e",
+   "state": "checkpoint",
+   "checkpoint_step": 800000,
+   "checkpoint_sha256": {
+    "ckpt/phase1_state.pt": "cb2efa5385c44a378d06ac5b3e9aa2565dafd4ea8937e3caf154ce18096458f7"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "rma",
+   "task": "walker2d",
+   "seed": 0,
+   "target": "any7",
+   "config_sha256": "e1d9759f726eba68da070e002abf661160eae995e5591648e617671a8646e3a1",
+   "state": "checkpoint",
+   "checkpoint_step": 800000,
+   "checkpoint_sha256": {
+    "ckpt/phase1_state.pt": "9edc4409371d611fd461c761d27b7e8eff96b83330aa59688862d979c92102df"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "rma",
+   "task": "walker2d",
+   "seed": 1,
+   "target": "any7",
+   "config_sha256": "3bbcdc18604e726fb034856179891e9b46e572288bfae75d188f0674e47caaea",
+   "state": "checkpoint",
+   "checkpoint_step": 800000,
+   "checkpoint_sha256": {
+    "ckpt/phase1_state.pt": "0b40ef5247975cf6b3b9b91ec1fd085ebc3352d42ecba1392dc452f457bf9db7"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "rma",
+   "task": "walker2d",
+   "seed": 2,
+   "target": "any8",
+   "config_sha256": "ef051657b31e3d71ea465eb0e6ed1b0e3a7f5ba5e7d8a1d960a05b2ce7bf6f59",
+   "state": "checkpoint",
+   "checkpoint_step": 800000,
+   "checkpoint_sha256": {
+    "ckpt/phase1_state.pt": "20a3f733442730532456ce410e56a71f9c855a0f24a563d586b80649f4ae632e"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "rma",
+   "task": "walker2d",
+   "seed": 3,
+   "target": "any8",
+   "config_sha256": "d9673db9cc43bbbcb200daa2f1cc25f2f0723233056ea822ac2c8e6964a741cc",
+   "state": "checkpoint",
+   "checkpoint_step": 1000000,
+   "checkpoint_sha256": {
+    "ckpt/phase1_state.pt": "d041dd01a3662c1f569fa0c05fbc4f4205e8b2c6054ddec74c44a8a6a9c2ff74"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "rma",
+   "task": "walker2d",
+   "seed": 4,
+   "target": "any8",
+   "config_sha256": "e5113aa16066e7f8646227ad550be8f83ff5c6e6a37d6e69f9f2604bb0118585",
+   "state": "checkpoint",
+   "checkpoint_step": 800000,
+   "checkpoint_sha256": {
+    "ckpt/phase1_state.pt": "d2be8ca3f15f7f051da4ce91e2f9ac6447ed171edbc29ed9641329efd1d84804"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "rmbpo",
+   "task": "halfcheetah",
+   "seed": 0,
+   "target": "any3",
+   "config_sha256": "73618afd3a8d4cdd8e00161c843f040fc14d38cf17743799b1cfb0c9fa41a0d1",
+   "state": "checkpoint",
+   "checkpoint_step": 5000,
+   "checkpoint_sha256": {
+    "ckpt/state_5000.pt": "1dc28c018b0e5d9573bf00ad9271ad2b5ed3b82cc8d79065c50044e97323ef77"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "rmbpo",
+   "task": "halfcheetah",
+   "seed": 1,
+   "target": "any3",
+   "config_sha256": "ae4104084f822dbf506d9e4f1e889dd5c0bf2c3d7c03f463c82ff20600a3564b",
+   "state": "checkpoint",
+   "checkpoint_step": 5000,
+   "checkpoint_sha256": {
+    "ckpt/state_5000.pt": "85b1b01ce22f298469b955cde4154c27f358710c89f79f2d1c5600cd795353a3"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "rmbpo",
+   "task": "hopper",
+   "seed": 1,
+   "target": "any3",
+   "config_sha256": "a70a4b3698d0505a5d66b1fa81b5d2782375e20544927dc7ccb13a9ddcc35968",
+   "state": "checkpoint",
+   "checkpoint_step": 5000,
+   "checkpoint_sha256": {
+    "ckpt/state_5000.pt": "262aa29826879f769167bf9fa77935cec48103fa706732ff39cc807ead0fb5c0"
+   }
+  },
+  {
+   "protocol": "shared",
+   "algo": "rmbpo",
+   "task": "hopper",
+   "seed": 2,
+   "target": "any3",
+   "config_sha256": "46d8fdaf483ef82b8ac68207960168c2bed2b1d9bc038214eaf26fc0d3fd51c9",
+   "state": "checkpoint",
+   "checkpoint_step": 5000,
+   "checkpoint_sha256": {
+    "ckpt/state_5000.pt": "cc64bb91c27c25401fb0abdc50533501c5d6a1993e68642e1cebeb70460a044b"
+   }
+  }
+ ]
+}
